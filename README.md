@@ -1,5 +1,7 @@
 # CS2 Steam Launcher
 
+[English Version](README_EN.md) | 中文版
+
 一个简洁的CS2（Counter-Strike 2）启动器，通过Steam协议启动游戏并自动连接到指定服务器。
 
 ## 功能特点
