@@ -2,16 +2,16 @@
 
 [English Version](README_EN.md) | 中文版
 
-一个简洁的CS2（Counter-Strike 2）启动器，通过Steam协议启动游戏并自动连接到指定服务器。
+一个简洁的 CS2（Counter-Strike 2）桌面启动器，基于 WPF 提供图形界面，通过 Steam 协议启动游戏并自动连接到指定服务器。
 
 ## 功能特点
 
-- 🚀 通过Steam URL协议启动CS2游戏并自动连接服务器
-- 🎯 一键式启动和连接
-- 🔑 支持密码保护的服务器
-- 📡 使用单一`steam://run/730//+connect {serverIp}:{serverPort}`协议
-- 🛠️ 完全不依赖Steamworks.NET库
-- 📝 包含SteamID转换工具类
+- 🚀 WPF 图形界面，一键启动并连接服务器
+- 🔑 支持密码服务器，自动拼接 `steam://run/730//+connect {serverIp}:{serverPort}`
+- 🧭 自动显示 SteamID64（可刷新/复制）
+- 🖥️ 检测 Steam 进程并可尝试启动 Steam
+- 👀 连接后自动监控 CS2 进程启动状态
+- 📝 内置 SteamID 转换工具类，不依赖 Steamworks.NET
 
 ## 系统要求
 
@@ -22,24 +22,12 @@
 
 ## 使用方法
 
-### 命令行参数
+### 图形界面使用
 
-```bash
-CS2Launcher.exe <服务器IP> <服务器端口> [密码]
-```
-
-示例：
-```bash
-CS2Launcher.exe 127.0.0.1 27015 mypassword
-```
-
-### 交互式输入
-
-如果不提供命令行参数，程序会提示您输入：
-
-1. 服务器IP地址
-2. 服务器端口（默认27015）
-3. 服务器密码（可选）
+1. 运行应用（`dotnet run` 或双击构建/发布后的 exe）。
+2. 填写服务器 IP、端口（默认 27015）、可选密码。
+3. 如需，点击“启动 Steam”唤起 Steam 客户端。
+4. 点击“启动并连接”，程序将调用 Steam 协议并自动监控 CS2 是否拉起。
 
 ## 工作原理
 
@@ -110,6 +98,7 @@ ulong steamId64 = SteamIDConverter.ConvertFromSteamID3("[U:1:12345678]");
 ### 构建项目
 
 ```bash
+dotnet restore
 dotnet build
 ```
 
@@ -122,8 +111,13 @@ dotnet run
 或直接运行生成的可执行文件：
 
 ```bash
-bin\Debug\net8.0\CS2Launcher.exe
+bin\Debug\net8.0-windows\CS2Launcher.exe
 ```
+
+### 发布
+
+- Windows 批处理：`build.bat` / `publish.bat`（含 x64/x86、带/不带运行时，单文件并打包压缩）。
+- macOS/Linux：可参考 `publish.sh`（当前输出 win-x64 自包含单文件并打 zip）。
 
 ## 故障排除
 
@@ -151,15 +145,18 @@ connect <服务器IP>:<服务器端口>
 password <密码>
 ```
 
-## 项目结构
+## 项目结构（节选）
 
 ```
 CS2Launcher/
-├── Program.cs              # 主程序文件
-├── CS2Launcher.csproj      # 项目配置文件
-├── build.bat               # 构建脚本
-├── publish.bat             # 发布脚本
-└── README.md               # 项目说明文档
+├── App.xaml                # WPF 应用入口
+├── MainWindow.xaml(.cs)    # 主窗口界面与逻辑
+├── Program.cs              # 启动器业务逻辑类（供 UI 调用）
+├── CS2Launcher.csproj      # 项目配置（UseWPF）
+├── build.bat / build.sh    # 构建脚本
+├── publish.bat / publish.sh# 发布脚本
+├── README.md / README_EN.md# 文档
+└── .gitignore
 ```
 
 ## 技术栈
@@ -184,3 +181,6 @@ CS2Launcher/
 - 支持通过单一Steam协议启动CS2并自动连接服务器
 - 完全移除对Steamworks.NET的依赖
 - 添加SteamID转换工具类
+
+### v1.0.1
+- 基于 WPF 提供图形界面

@@ -2,16 +2,16 @@
 
 English Version | [中文版](README.md)
 
-A lightweight CS2 (Counter-Strike 2) launcher that launches the game through Steam protocol and automatically connects to a specified server.
+A lightweight CS2 (Counter-Strike 2) desktop launcher with a WPF GUI. It uses the Steam protocol to launch the game and auto-connect to a specified server.
 
 ## Features
 
-- 🚀 Launch CS2 game and auto-connect to servers via Steam URL protocol
-- 🎯 One-click launch and connection
-- 🔑 Support for password-protected servers
-- 📡 Uses single `steam://run/730//+connect {serverIp}:{serverPort}` protocol
-- 🛠️ Completely independent of Steamworks.NET library
-- 📝 Includes SteamID conversion utility class
+- 🚀 WPF GUI with one-click launch and connect
+- 🔑 Supports password-protected servers, builds `steam://run/730//+connect {serverIp}:{serverPort}`
+- 🧭 Auto-displays SteamID64 (refresh/copy)
+- 🖥️ Detects Steam process and can attempt to start Steam
+- 👀 Monitors CS2 process startup after invoking Steam
+- 📝 Built-in SteamID converter; no Steamworks.NET dependency
 
 ## System Requirements
 
@@ -22,24 +22,12 @@ A lightweight CS2 (Counter-Strike 2) launcher that launches the game through Ste
 
 ## Usage
 
-### Command Line Arguments
+### GUI Usage
 
-```bash
-CS2Launcher.exe <ServerIP> <ServerPort> [Password]
-```
-
-Example:
-```bash
-CS2Launcher.exe 127.0.0.1 27015 mypassword
-```
-
-### Interactive Input
-
-If no command line arguments are provided, the program will prompt you to enter:
-
-1. Server IP address
-2. Server port (default 27015)
-3. Server password (optional)
+1. Run the app (`dotnet run` or double-click the built/published exe).
+2. Enter server IP, port (default 27015), and optional password.
+3. If needed, click “Start Steam” to launch the Steam client.
+4. Click “Launch and Connect”; the app invokes the Steam protocol and monitors whether CS2 starts.
 
 ## How It Works
 
@@ -110,6 +98,7 @@ ulong steamId64 = SteamIDConverter.ConvertFromSteamID3("[U:1:12345678]");
 ### Build the Project
 
 ```bash
+dotnet restore
 dotnet build
 ```
 
@@ -122,8 +111,13 @@ dotnet run
 Or run the generated executable directly:
 
 ```bash
-bin\Debug\net8.0\CS2Launcher.exe
+bin\Debug\net8.0-windows\CS2Launcher.exe
 ```
+
+### Publish
+
+- Windows batch: `build.bat` / `publish.bat` (x64/x86, with/without runtime, single-file, zipped).
+- macOS/Linux reference: `publish.sh` (currently outputs win-x64 self-contained single-file with zip).
 
 ## Troubleshooting
 
@@ -151,15 +145,18 @@ connect <serverIP>:<serverPort>
 password <password>
 ```
 
-## Project Structure
+## Project Structure (excerpt)
 
 ```
 CS2Launcher/
-├── Program.cs              # Main program file
-├── CS2Launcher.csproj      # Project configuration file
-├── build.bat               # Build script
-├── publish.bat             # Publish script
-└── README.md               # Project documentation
+├── App.xaml                # WPF app entry
+├── MainWindow.xaml(.cs)    # UI and code-behind
+├── Program.cs              # Launcher logic used by UI
+├── CS2Launcher.csproj      # Project config (UseWPF)
+├── build.bat / build.sh    # Build scripts
+├── publish.bat / publish.sh# Publish scripts
+├── README.md / README_EN.md# Docs
+└── .gitignore
 ```
 
 ## Tech Stack
