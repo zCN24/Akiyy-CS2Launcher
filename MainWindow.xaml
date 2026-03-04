@@ -1,0 +1,81 @@
+<Window x:Class="CS2SteamLauncher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CS2 Steam Launcher" Height="640" Width="700"
+        Background="#FFF7F8FB"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.8*" />
+            <ColumnDefinition Width="1.2*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Vertical" Grid.Row="0" Grid.ColumnSpan="2" Margin="0 0 0 14">
+            <TextBlock Text="CS2 Launcher" FontSize="28" FontWeight="SemiBold" Foreground="#202533" />
+            <TextBlock Text="启动 Steam 并一键连接服务器" FontSize="13" Foreground="#606778" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Grid.Column="0" Padding="16" Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" >
+            <StackPanel>
+                <StackPanel Margin="0 0 0 12">
+                    <TextBlock Text="服务器 IP" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <TextBox x:Name="ServerIpText" Margin="0 6 0 4" Height="34" Padding="10 6" Text="127.0.0.1" Width="280"/>
+                    <TextBlock Text="示例：127.0.0.1 或 192.168.x.x" FontSize="11" Foreground="#7A7F8A" TextAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Margin="0 0 0 12">
+                    <TextBlock Text="服务器端口" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <TextBox x:Name="ServerPortText" Margin="0 6 0 4" Height="34" Padding="10 6" Text="27015" Width="280"/>
+                    <TextBlock Text="默认 27015，可填 1-65535" FontSize="11" Foreground="#7A7F8A" TextAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Margin="0 0 0 12">
+                    <TextBlock Text="服务器密码（可选）" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <PasswordBox x:Name="ServerPasswordBox" Margin="0 6 0 4" Height="34" Padding="10 6" Width="280" />
+                    <TextBlock Text="如果服务器设置了密码，在此输入，否则留空" FontSize="11" Foreground="#7A7F8A" TextAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Margin="0 0 0 16">
+                    <TextBlock Text="SteamID64" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <TextBox x:Name="SteamIdText" Margin="0 6 0 6" Height="34" Padding="10 6" Width="230" HorizontalAlignment="Center" TextAlignment="Center" IsReadOnly="True" VerticalContentAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="CopySteamIdButton" Content="复制" Width="64" Margin="0 0 10 0" Click="CopySteamId" />
+                        <Button x:Name="RefreshSteamIdButton" Content="刷新" Width="64" Click="RefreshSteamId" />
+                    </StackPanel>
+                    <TextBlock Text="自动读取当前登录 Steam 用户的 64 位 ID" FontSize="11" Foreground="#7A7F8A" TextAlignment="Center" />
+                </StackPanel>
+
+                <!-- 换肤/外部网站功能暂时注释
+                <TextBlock Text="换肤/外部网站 (支持 {steamid64} 占位符)" FontWeight="SemiBold" />
+                <DockPanel Margin="0 6 0 4" Height="34">
+                    <TextBox x:Name="SkinSiteText" DockPanel.Dock="Left" Text="https://steamcommunity.com/profiles/{steamid64}" VerticalContentAlignment="Center" Padding="10 6" MaxWidth="260" />
+                    <Button x:Name="OpenSkinSiteButton" Content="打开" Width="72" Margin="8 0 0 0" Click="OpenSkinSite" />
+                </DockPanel>
+                -->
+
+                <StackPanel Orientation="Horizontal" Margin="0 4 0 0" HorizontalAlignment="Center">
+                    <Button x:Name="LaunchButton" Content="启动并连接" Height="42" Width="140" Margin="0 0 10 0" Background="{StaticResource AccentBrush}" Foreground="White" FontWeight="Bold" Click="LaunchAndConnect" />
+                    <Button x:Name="StartSteamButton" Content="启动 Steam" Height="40" Width="120" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Margin="14 0 0 0" Padding="14" Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="状态日志" FontWeight="SemiBold" />
+                <TextBox x:Name="LogTextBox" Grid.Row="1" Margin="0 10 0 0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" Padding="10"/>
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="保持 Steam 登录，点击启动即可连接服务器" Foreground="#666" FontSize="12" Margin="0 12 0 0" />
+    </Grid>
+</Window>
