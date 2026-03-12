@@ -40,7 +40,7 @@
 ### 整体流程
 
 1. 主程序读取 `config.json` 中的更新配置。
-2. 请求远程 manifest（支持单对象或按 channel 分组）。
+2. 优先请求主更新清单地址；若主地址不可用则自动切换到备清单地址。
 3. 比较当前版本与最新版本。
 4. 有更新时提示用户（可选“跳过此版本”）。
 5. 下载更新包并校验 SHA256。
@@ -181,7 +181,8 @@ ulong steamId64 = SteamIDConverter.ConvertFromSteamID3("[U:1:12345678]");
    - `ServerIp` / `ServerPort` / `ServerPassword` / `CustomLaunchOptions`
    - `HasExecutedFirstLaunchCommand`（首次启动命令是否已执行，用于控制一次性重启策略）
    - `AutoCheckUpdates`（是否启动后自动检查更新）
-   - `UpdateManifestUrl`（更新清单 URL）
+   - `UpdateManifestUrl`（主更新清单 URL）
+   - `BackupUpdateManifestUrl`（备更新清单 URL，主地址不可用时自动切换）
    - `UpdateChannel`（更新通道，如 `stable` / `beta`）
    - `SkippedVersion`（被用户跳过的版本号）
 
@@ -233,7 +234,7 @@ bin\Debug\net8.0-windows\CS2Launcher.exe
    - 如果服务器有密码，确保密码输入正确
 
 4. **"检查更新失败"**
-   - 确认 `UpdateManifestUrl` 可访问并返回合法 JSON
+   - 确认 `UpdateManifestUrl` / `BackupUpdateManifestUrl` 至少一个可访问并返回合法 JSON
    - 确认 manifest 的 `version` 与 `packageUrl` 字段存在
    - 若启用 SHA256 校验，确认 `sha256` 与下载文件一致
 

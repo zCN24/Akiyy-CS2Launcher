@@ -246,12 +246,14 @@ namespace CS2SteamLauncher
 
         private async Task CheckForUpdatesCoreAsync(bool isManualTrigger)
         {
-            string manifestUrl = _config.UpdateManifestUrl?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(manifestUrl))
+            string primaryManifestUrl = _config.UpdateManifestUrl?.Trim() ?? string.Empty;
+            string backupManifestUrl = _config.BackupUpdateManifestUrl?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(primaryManifestUrl))
             {
                 if (isManualTrigger)
                 {
-                    AppendLog("未配置更新清单地址，请在 config.json 中设置 UpdateManifestUrl");
+                    AppendLog("未配置主更新清单地址，请在 config.json 中设置 UpdateManifestUrl");
                 }
 
                 return;
@@ -262,7 +264,24 @@ namespace CS2SteamLauncher
             {
                 AppendLog(isManualTrigger ? "正在检查更新..." : "启动后自动检查更新...");
 
-                UpdateCheckResult checkResult = await _updateService.CheckForUpdateAsync(manifestUrl, _config.UpdateChannel);
+                AppendLog($"检查主更新清单: {primaryManifestUrl}");
+                UpdateCheckResult checkResult = await _updateService.CheckForUpdateAsync(primaryManifestUrl, _config.UpdateChannel);
+
+                if (!string.IsNullOrWhiteSpace(checkResult.ErrorMessage) &&
+                    !string.IsNullOrWhiteSpace(backupManifestUrl) &&
+                    !string.Equals(primaryManifestUrl, backupManifestUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    string primaryError = checkResult.ErrorMessage;
+                    AppendLog($"主更新清单不可用，准备切换备清单。原因: {primaryError}");
+                    AppendLog($"检查备更新清单: {backupManifestUrl}");
+
+                    checkResult = await _updateService.CheckForUpdateAsync(backupManifestUrl, _config.UpdateChannel);
+                    if (!string.IsNullOrWhiteSpace(checkResult.ErrorMessage))
+                    {
+                        checkResult.ErrorMessage = $"主清单失败: {primaryError}；备清单失败: {checkResult.ErrorMessage}";
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(checkResult.ErrorMessage))
                 {
                     AppendLog($"检查更新失败: {checkResult.ErrorMessage}");

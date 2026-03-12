@@ -736,6 +736,7 @@ namespace CS2SteamLauncher
             public bool HasExecutedFirstLaunchCommand { get; set; }
             public bool AutoCheckUpdates { get; set; } = true;
             public string? UpdateManifestUrl { get; set; }
+            public string? BackupUpdateManifestUrl { get; set; }
             public string UpdateChannel { get; set; } = "stable";
             public string? SkippedVersion { get; set; }
         }

@@ -5,6 +5,7 @@
   "CustomLaunchOptions": "-nojoy -high",
   "AutoCheckUpdates": true,
   "UpdateManifestUrl": "",
+  "BackupUpdateManifestUrl": "",
   "UpdateChannel": "stable",
   "SkippedVersion": ""
 }
