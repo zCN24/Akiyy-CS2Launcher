@@ -1,11 +1,11 @@
 {
-  "ServerIp": "127.0.0.1",
+  "ServerIp": "cs.akiyy.top",
   "ServerPort": 27015,
-  "ServerPassword": "",
+  "ServerPassword": "Akiyy.top",
   "CustomLaunchOptions": "-nojoy -high",
   "AutoCheckUpdates": true,
-  "UpdateManifestUrl": "",
-  "BackupUpdateManifestUrl": "",
+  "UpdateManifestUrl": "https://github.com/zCN24/CS2Launcher/releases/latest/download/manifest.json",
+  "BackupUpdateManifestUrl": "https://akiyy-1314006789.cos.ap-beijing.myqcloud.com/cs2launcher/latest.json",
   "UpdateChannel": "stable",
   "SkippedVersion": ""
 }
