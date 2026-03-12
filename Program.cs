@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
-namespace CS2SteamLauncher
+namespace CS2SteamLauncher 
 {
     public class CS2Launcher
     {
