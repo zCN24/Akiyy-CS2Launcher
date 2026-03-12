@@ -79,6 +79,6 @@
             </Grid>
         </Border>
 
-        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="Akiyy Hub | QQ: 2119889776 TG: @Akiyy" Foreground="#666" FontSize="12" Margin="0 12 0 0" />
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="Akiyy Hub | QQ: 2119889776 TG: @Akiyy | Akiyy定制版" Foreground="#666" FontSize="12" Margin="0 12 0 0" />
     </Grid>
 </Window>
