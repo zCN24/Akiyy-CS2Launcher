@@ -216,6 +216,44 @@ dotnet run
 bin\Debug\net8.0-windows\CS2Launcher.exe
 ```
 
+## GitHub Actions 自动发布
+
+仓库内置工作流：
+
+- `.github/workflows/auto-release.yml`
+
+行为说明：
+
+1. 每次 push 自动触发构建与发布。
+2. 生成主程序发布目录，并确保 `config.default.json` 放在包根目录。
+3. 将主程序与 Updater 一起打包为 zip。
+4. 计算 zip 的 SHA256，生成两份更新清单：
+    - `manifest.json`（GitHub 下载地址）
+    - `manifest-cos.json`（COS 下载地址）
+5. 自动创建 GitHub Release 并上传 zip 与清单。
+6. 同步上传 zip 与清单到腾讯云 COS（含稳定 `latest.json`）。
+
+### 需要配置的 Secrets
+
+- `COS_SECRET_ID`
+- `COS_SECRET_KEY`
+- `COS_BUCKET`
+- `COS_REGION`
+- `COS_BASE_URL`（可选，自定义域名；不填则使用默认 COS 域名）
+- `SOURCE_MANIFEST_URL`（可选，用于继承旧清单的 `mandatory/releaseNotes`）
+
+### 可选变量
+
+- `RELEASE_NOTES`（Repository Variables，可覆盖自动生成的发布说明）
+
+### 客户端可使用的固定清单地址
+
+- GitHub：
+   - `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`
+- COS：
+   - `https://<bucket>.cos.<region>.myqcloud.com/cs2launcher/latest.json`
+   - 或你配置的 `COS_BASE_URL/cs2launcher/latest.json`
+
 ## 故障排除
 
 ### 常见问题
