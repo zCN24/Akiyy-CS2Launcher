@@ -12,11 +12,18 @@ namespace CS2SteamLauncher
         private readonly CS2Launcher _launcher = new CS2Launcher();
         private string _steamId64 = string.Empty;
         private bool _isBusy;
+        private CS2Launcher.LauncherConfig _config = new CS2Launcher.LauncherConfig();
 
-        public MainWindow()
+        public MainWindow() 
         {
             InitializeComponent();
-            Loaded += async (_, _) => await RefreshSteamIdInternalAsync();
+            Loaded += async (_, _) => await OnLoadedAsync();
+        }
+
+        private async Task OnLoadedAsync()
+        {
+            await RefreshSteamIdInternalAsync();
+            await LoadConfigAsync();
         }
 
         private void SetBusy(bool isBusy)
@@ -45,7 +52,7 @@ namespace CS2SteamLauncher
                 SetBusy(true);
                 _steamId64 = _launcher.GetActiveSteamUserInfo();
                 SteamIdText.Text = string.IsNullOrWhiteSpace(_steamId64) ? "未获取到SteamID" : _steamId64;
-                AppendLog(string.IsNullOrWhiteSpace(_steamId64) ? "未能获取 SteamID64，请确认已登录 Steam。" : "已获取 SteamID64。");
+                AppendLog(string.IsNullOrWhiteSpace(_steamId64) ? "未能获取 SteamID64，请确认已登录 Steam" : "已获取 SteamID64");
             }
             finally
             {
@@ -64,39 +71,82 @@ namespace CS2SteamLauncher
         {
             if (string.IsNullOrWhiteSpace(_steamId64))
             {
-                AppendLog("没有可复制的 SteamID64。");
+                AppendLog("没有可复制的 SteamID64");
                 return;
             }
 
             Clipboard.SetText(_steamId64);
-            AppendLog("SteamID64 已复制。");
+            AppendLog("SteamID64 已复制");
         }
 
         private async void LaunchAndConnect(object sender, RoutedEventArgs e)
         {
             if (!int.TryParse(ServerPortText.Text, out int port) || port <= 0 || port > 65535)
             {
-                AppendLog("端口无效，请输入 1-65535。");
+                AppendLog("端口无效，请输入 1-65535之间的数字");
                 return;
             }
 
             string ip = ServerIpText.Text.Trim();
             string password = ServerPasswordBox.Password.Trim();
+            string customArgs = CustomLaunchArgsText.Text.Trim();
+
+            _config.ServerIp = ip;
+            _config.ServerPort = port;
+            _config.ServerPassword = string.IsNullOrWhiteSpace(password) ? null : password;
+            _config.CustomLaunchOptions = string.IsNullOrWhiteSpace(customArgs) ? null : customArgs;
+            await SaveConfigAsync();
 
             SetBusy(true);
             try
             {
-                AppendLog("正在尝试连接服务器...");
-                bool ok = await _launcher.LaunchAndConnectAsync(ip, port, string.IsNullOrWhiteSpace(password) ? null : password);
-
-                if (ok)
+                // 只在“首次执行启动游戏命令”时，若 CS2 已运行则先结束进程再重启。
+                if (!_config.HasExecutedFirstLaunchCommand)
                 {
-                    AppendLog($"已调用 Steam 连接 {ip}:{port}，开始监控启动...");
+                    AppendLog("首次启动命令检测：检查 CS2 是否已在运行...");
+
+                    if (_launcher.IsCs2Running())
+                    {
+                        AppendLog("检测到 CS2 正在运行，按首次策略先结束游戏后重新启动");
+
+                        if (!_launcher.TryStopCs2IfRunning(out int stoppedCount, out string stopError))
+                        {
+                            AppendLog($"结束 CS2 失败: {stopError}");
+                            AppendLog("首次策略未完成，本次已取消启动，请以管理员权限重试");
+                            return;
+                        }
+
+                        AppendLog($"已结束 CS2 进程数量: {stoppedCount}");
+                    }
+                    else
+                    {
+                        AppendLog("首次启动命令检测：未发现正在运行的 CS2");
+                    }
+                }
+
+                AppendLog("正在尝试启动 CS2...");
+                var launchResult = await _launcher.LaunchAndConnectAsync(
+                    ip,
+                    port,
+                    string.IsNullOrWhiteSpace(password) ? null : password,
+                    string.IsNullOrWhiteSpace(customArgs) ? null : customArgs,
+                    msg => AppendLog(msg));
+
+                if (launchResult.firstLaunchCommandSent && !_config.HasExecutedFirstLaunchCommand)
+                {
+                    _config.HasExecutedFirstLaunchCommand = true;
+                    await SaveConfigAsync();
+                    AppendLog("已记录首次启动命令完成，后续将不再自动结束已运行的 CS2");
+                }
+
+                if (launchResult.overallSuccess)
+                {
+                    AppendLog($"已触发连接流程，开始监控 {ip}:{port} ...");
                     await _launcher.MonitorGameLaunchAsync(msg => AppendLog(msg));
                 }
                 else
                 {
-                    AppendLog("调用 Steam 连接失败，请确认已安装并登录 Steam。");
+                    AppendLog("调用 Steam 连接失败，请确认已安装并登录 Steam");
                 }
             }
             catch (Exception ex)
@@ -116,16 +166,74 @@ namespace CS2SteamLauncher
             {
                 if (_launcher.IsSteamRunning())
                 {
-                    AppendLog("Steam 已在运行。");
+                    AppendLog("Steam 已在运行");
                     return;
                 }
 
                 bool started = await _launcher.StartSteamAsync();
-                AppendLog(started ? "已尝试启动 Steam。" : "启动 Steam 失败，请检查安装路径。");
+                AppendLog(started ? "已尝试启动 Steam" : "启动 Steam 失败，请检查安装路径");
             }
             finally
             {
                 SetBusy(false);
+            }
+        }
+
+        private async void OpenSkinSite(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_steamId64))
+            {
+                await RefreshSteamIdInternalAsync();
+            }
+
+            if (string.IsNullOrWhiteSpace(_steamId64))
+            {
+                AppendLog("未能获取 SteamID64，无法打开换肤网站");
+                return;
+            }
+
+            try
+            {
+                var url = $"https://skin.akiyy.top/?steamid={_steamId64}";
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+                AppendLog("已在浏览器打开换肤网站");
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"打开换肤网站失败: {ex.Message}");
+            }
+        }
+
+        private async Task LoadConfigAsync()
+        {
+            try
+            {
+                _config = await CS2Launcher.LauncherConfigManager.LoadAsync();
+
+                ServerIpText.Text = _config.ServerIp;
+                ServerPortText.Text = _config.ServerPort.ToString();
+                ServerPasswordBox.Password = _config.ServerPassword ?? string.Empty;
+                CustomLaunchArgsText.Text = _config.CustomLaunchOptions ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"加载配置失败: {ex.Message}");
+            }
+        }
+
+        private async Task SaveConfigAsync()
+        {
+            try
+            {
+                await CS2Launcher.LauncherConfigManager.SaveAsync(_config);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"保存配置失败: {ex.Message}");
             }
         }
 
