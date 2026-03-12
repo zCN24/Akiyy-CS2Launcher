@@ -1,0 +1,6 @@
+{
+  "ServerIp": "127.0.0.1",
+  "ServerPort": 27015,
+  "ServerPassword": "",
+  "CustomLaunchOptions": "-nojoy -high"
+}
