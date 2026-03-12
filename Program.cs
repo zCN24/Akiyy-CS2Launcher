@@ -734,6 +734,10 @@ namespace CS2SteamLauncher
             public string? ServerPassword { get; set; }
             public string? CustomLaunchOptions { get; set; }
             public bool HasExecutedFirstLaunchCommand { get; set; }
+            public bool AutoCheckUpdates { get; set; } = true;
+            public string? UpdateManifestUrl { get; set; }
+            public string UpdateChannel { get; set; } = "stable";
+            public string? SkippedVersion { get; set; }
         }
 
         public static class LauncherConfigManager

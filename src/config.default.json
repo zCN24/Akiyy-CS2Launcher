@@ -2,5 +2,9 @@
   "ServerIp": "127.0.0.1",
   "ServerPort": 27015,
   "ServerPassword": "",
-  "CustomLaunchOptions": "-nojoy -high"
+  "CustomLaunchOptions": "-nojoy -high",
+  "AutoCheckUpdates": true,
+  "UpdateManifestUrl": "",
+  "UpdateChannel": "stable",
+  "SkippedVersion": ""
 }

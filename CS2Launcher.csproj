@@ -8,6 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <DefaultItemExcludes>$(DefaultItemExcludes);CS2Launcher.Updater\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- NuGet包引用 -->
@@ -18,6 +19,21 @@
   <ItemGroup>
     <Resource Include="icon.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="CS2Launcher.Updater\CS2Launcher.Updater.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Target Name="CopyUpdaterArtifacts" AfterTargets="Build">
+    <ItemGroup>
+      <UpdaterArtifacts Include="CS2Launcher.Updater\bin\$(Configuration)\net8.0\Updater.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(UpdaterArtifacts)"
+          DestinationFolder="$(OutDir)"
+          SkipUnchangedFiles="true"
+          Condition="@(UpdaterArtifacts) != ''" />
+  </Target>
 
 
 </Project>

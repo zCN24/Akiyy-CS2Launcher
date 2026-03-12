@@ -12,6 +12,8 @@
 - 📝 内置 SteamID 转换工具类，不依赖 Steamworks.NET
 - 💾 内置配置文件：程序目录下 `config.json`（可由 `config.default.json` 首次自动生成）
 - ♻️ 首次启动策略：仅在“第一次执行启动命令”时会检查并结束已运行的 CS2，后续不会再自动结束
+- 🔄 内置更新模块：支持启动后自动检查、手动“检查更新”、下载更新包并校验 SHA256
+- 🛠️ 外部 Updater：更新时拉起 `Updater.exe` 替换文件并自动重启主程序
 
 ## 系统要求
 
@@ -31,6 +33,71 @@
 5. 点击“启动并连接”，程序将调用 Steam 协议并自动监控 CS2 是否拉起（有密码时会先 `+exec cs2launcher.cfg` 启动，检测到运行 10 秒后再自动连接），同时写回 `config.json`。
 6. 需要换肤/外部站点时，可点击“打开换肤网站”按钮直接带入当前 SteamID64。
 7. 首次点击“启动并连接”时若发现 CS2 已在运行，程序会先结束 CS2 再重启；首次命令执行后该行为不再触发。
+8. 可点击“检查更新”手动检查新版本；若开启自动更新检查，程序启动后会自动检查一次。
+
+## 自动更新模块
+
+### 整体流程
+
+1. 主程序读取 `config.json` 中的更新配置。
+2. 请求远程 manifest（支持单对象或按 channel 分组）。
+3. 比较当前版本与最新版本。
+4. 有更新时提示用户（可选“跳过此版本”）。
+5. 下载更新包并校验 SHA256。
+6. 启动 `Updater.exe`，等待主程序退出后解压覆盖并重启。
+
+### manifest 格式
+
+单通道格式：
+
+```json
+{
+   "version": "1.2.0",
+   "packageUrl": "https://example.com/CS2Launcher-1.2.0.zip",
+   "sha256": "<sha256 hex>",
+   "releaseNotes": "修复连接流程并优化稳定性",
+   "mandatory": false
+}
+```
+
+多通道格式：
+
+```json
+{
+   "channels": {
+      "stable": {
+         "version": "1.2.0",
+         "packageUrl": "https://example.com/CS2Launcher-1.2.0.zip",
+         "sha256": "<sha256 hex>",
+         "releaseNotes": "稳定版更新",
+         "mandatory": false
+      },
+      "beta": {
+         "version": "1.3.0",
+         "packageUrl": "https://example.com/CS2Launcher-1.3.0-beta.zip",
+         "sha256": "<sha256 hex>",
+         "releaseNotes": "测试版更新",
+         "mandatory": false
+      }
+   }
+}
+```
+
+### 更新包要求
+
+- 当前 Updater 仅支持 `.zip`。
+- zip 可直接平铺应用文件，也可外层包含单个根目录（Updater 会自动识别）。
+- 建议将发布输出目录内容完整打包（包含主程序依赖文件）。
+- 若目标目录已有 `config.json`，Updater 会保留本地配置，不覆盖该文件。
+
+### Updater 参数（由主程序传入）
+
+```text
+--package <更新包路径>
+--targetDir <应用目录>
+--processId <主程序进程ID>
+--exeName <主程序EXE文件名>
+```
 
 ## 工作原理
 
@@ -113,6 +180,10 @@ ulong steamId64 = SteamIDConverter.ConvertFromSteamID3("[U:1:12345678]");
 - 关键字段：
    - `ServerIp` / `ServerPort` / `ServerPassword` / `CustomLaunchOptions`
    - `HasExecutedFirstLaunchCommand`（首次启动命令是否已执行，用于控制一次性重启策略）
+   - `AutoCheckUpdates`（是否启动后自动检查更新）
+   - `UpdateManifestUrl`（更新清单 URL）
+   - `UpdateChannel`（更新通道，如 `stable` / `beta`）
+   - `SkippedVersion`（被用户跳过的版本号）
 
 ## 密码CFG文件
 
@@ -161,6 +232,16 @@ bin\Debug\net8.0-windows\CS2Launcher.exe
    - 确保服务器正在运行且可访问
    - 如果服务器有密码，确保密码输入正确
 
+4. **"检查更新失败"**
+   - 确认 `UpdateManifestUrl` 可访问并返回合法 JSON
+   - 确认 manifest 的 `version` 与 `packageUrl` 字段存在
+   - 若启用 SHA256 校验，确认 `sha256` 与下载文件一致
+
+5. **"无法启动 Updater"**
+   - 确认程序输出目录存在 `Updater.exe`
+   - 确认更新包为 zip，且可正常解压
+   - 查看 Updater 日志：`<应用目录>/logs/updater-*.log`
+
 ### 备用方案
 
 如果自动连接失败，程序会提供手动连接的指令，您可以在游戏内控制台（按~键）依次输入：
@@ -177,6 +258,10 @@ CS2Launcher/
 ├── App.xaml                # WPF 应用入口
 ├── MainWindow.xaml(.cs)    # 主窗口界面与逻辑
 ├── Program.cs              # 启动器业务逻辑类（供 UI 调用）
+├── UpdateService.cs         # 自动更新检查/下载/校验与启动 Updater
+├── CS2Launcher.Updater/     # 独立更新器项目
+│   ├── CS2Launcher.Updater.csproj
+│   └── Program.cs
 ├── CS2Launcher.csproj      # 项目配置（UseWPF）
 ├── README.md               # 文档
 └── .gitignore
