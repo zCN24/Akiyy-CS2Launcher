@@ -75,6 +75,7 @@ jobs:
         shell: pwsh
         run: |
           $sourceDir = "bin/Release/net8.0-windows"
+          $srcDir = "src"
           $stageDir = "dist/stage"
 
           if (Test-Path "dist") {
@@ -84,8 +85,10 @@ jobs:
           New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
           Copy-Item "$sourceDir/*" -Destination $stageDir -Recurse -Force
 
-          # Ensure template config is in root of package.
-          Copy-Item "src/config.default.json" -Destination "$stageDir/config.default.json" -Force
+          # Put all files from src into the package root.
+          if (Test-Path $srcDir) {
+            Copy-Item "$srcDir/*" -Destination $stageDir -Recurse -Force
+          }
 
           Compress-Archive -Path "$stageDir/*" -DestinationPath "dist/${{ steps.meta.outputs.zip_name }}" -Force
 
@@ -176,7 +179,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: Auto Release ${{ steps.meta.outputs.version }}
+          name: ${{ github.event.repository.name }} ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
           make_latest: true
           files: |
