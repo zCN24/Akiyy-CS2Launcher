@@ -214,12 +214,12 @@ jobs:
             $releaseName = "$env:CIRCLE_PROJECT_REPONAME $tag"
             $releaseBody = "Auto release generated from push.`n`nVersion: $version`nSHA256: $sha256"
 
-            cmd /c "\"$($ghCmd.Source)\" repo view $githubRepo --json name --jq .name 1>nul 2>nul"
+            & $ghCmd.Source repo view $githubRepo --json name --jq .name *> $null
             if ($LASTEXITCODE -ne 0) {
               throw "Cannot access repository '$githubRepo' with current GITHUB_TOKEN."
             }
 
-            cmd /c "\"$($ghCmd.Source)\" release view $tag --repo $githubRepo 1>nul 2>nul"
+            & $ghCmd.Source release view $tag --repo $githubRepo *> $null
             if ($LASTEXITCODE -ne 0) {
               & $ghCmd.Source release create $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --title $releaseName --notes $releaseBody --repo $githubRepo
             } else {
