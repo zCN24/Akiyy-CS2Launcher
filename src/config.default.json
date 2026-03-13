@@ -1,7 +1,7 @@
 {
   "ServerIp": "cs.akiyy.top",
   "ServerPort": 27015,
-  "ServerPassword": "Akiyy.top",
+  "ServerPassword": "",
   "CustomLaunchOptions": "-nojoy -high",
   "AutoCheckUpdates": true,
   "UpdateManifestUrl": "https://github.com/zCN24/CS2Launcher/releases/latest/download/manifest.json",
