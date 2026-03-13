@@ -8,7 +8,7 @@
       UpgradeCode="9A37756E-7A49-4D7E-A77D-0F287F304F9F"
       Scope="perMachine">
 
-    <MajorUpgrade DowngradeErrorMessage="[ProductName] 已安装更新版本。" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="AppIcon" SourceFile="..\icon.ico" />
@@ -44,11 +44,9 @@
       </Component>
     </StandardDirectory>
 
-    <DirectoryRef Id="INSTALLFOLDER">
-      <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
-        <Files Include="$(var.PublishDir)\**" Exclude="$(var.PublishDir)\**\*.pdb" />
-      </ComponentGroup>
-    </DirectoryRef>
+    <ComponentGroup Id="AppFiles">
+      <Files Include="$(var.PublishDir)\**" Directory="INSTALLFOLDER" />
+    </ComponentGroup>
 
     <Feature Id="MainFeature" Title="CS2Launcher" Level="1">
       <ComponentGroupRef Id="AppFiles" />

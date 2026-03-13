@@ -77,6 +77,9 @@ jobs:
         shell: pwsh
         run: |
           cmd /c "build-msi.bat ${{ steps.meta.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) {
+            throw "build-msi.bat failed with exit code $LASTEXITCODE"
+          }
 
       - name: Stage package files
         shell: pwsh

@@ -10,7 +10,6 @@ set MSI_OUT_DIR=%ROOT%artifacts\installer
 set INSTALLER_PROJECT=%ROOT%installer\CS2Launcher.Installer.wixproj
 set APP_PROJECT=%ROOT%CS2Launcher.csproj
 set UPDATER_PROJECT=%ROOT%CS2Launcher.Updater\CS2Launcher.Updater.csproj
-set MSI_NAME=CS2Launcher-%VERSION%-win-x64-with-runtime.msi
 
 if not "%~1"=="" (
   set VERSION=%~1

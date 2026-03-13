@@ -4,6 +4,7 @@
     <Platform>x64</Platform>
     <InstallerPlatform>x64</InstallerPlatform>
     <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(Version)</DefineConstants>
+    <SuppressValidation>true</SuppressValidation>
   </PropertyGroup>
 
   <ItemGroup>

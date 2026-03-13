@@ -61,6 +61,9 @@ jobs:
             dotnet restore CS2Launcher.csproj
             dotnet build CS2Launcher.csproj -c Release /p:Version=$version /p:AssemblyVersion=$version /p:FileVersion=$version
             cmd /c "build-msi.bat $version"
+            if ($LASTEXITCODE -ne 0) {
+              throw "build-msi.bat failed with exit code $LASTEXITCODE"
+            }
 
             $sourceDir = "artifacts/publish/app"
             $srcDir = "src"
