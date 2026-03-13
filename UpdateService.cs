@@ -233,16 +233,38 @@ namespace CS2SteamLauncher
                     $"--processId {current.Id} " +
                     $"--exeName \"{currentExeName}\"";
 
-                var startInfo = new ProcessStartInfo
+                string workingDir = Path.GetDirectoryName(updaterExePath) ?? AppContext.BaseDirectory;
+
+                // First try ShellExecute for best compatibility with standard app launch behavior.
+                var shellStartInfo = new ProcessStartInfo
                 {
                     FileName = updaterExePath,
                     Arguments = arguments,
                     UseShellExecute = true,
-                    WorkingDirectory = Path.GetDirectoryName(updaterExePath)
+                    WorkingDirectory = workingDir
                 };
 
-                Process.Start(startInfo);
-                return true;
+                try
+                {
+                    Process.Start(shellStartInfo);
+                    return true;
+                }
+                catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+                {
+                    // ERROR_CANCELLED: user canceled UAC/SmartScreen/Windows security prompt.
+                    // Retry with direct process creation to reduce shell-side prompt impact.
+                    var directStartInfo = new ProcessStartInfo
+                    {
+                        FileName = updaterExePath,
+                        Arguments = arguments,
+                        UseShellExecute = false,
+                        WorkingDirectory = workingDir,
+                        CreateNoWindow = true
+                    };
+
+                    Process.Start(directStartInfo);
+                    return true;
+                }
             }
             catch (Exception ex)
             {

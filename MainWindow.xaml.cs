@@ -385,7 +385,7 @@ namespace CS2SteamLauncher
             }
 
             AppendLog($"启动 Updater 失败: {startError}");
-            AppendLog("未检测到 Updater.exe，将尝试在浏览器打开下载链接");
+            AppendLog("Updater 启动被系统拦截或取消，将尝试在浏览器打开下载链接");
 
             try
             {
