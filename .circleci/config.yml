@@ -79,7 +79,11 @@ jobs:
 
             $sha256 = (Get-FileHash -Algorithm SHA256 "dist/$zipName").Hash.ToLowerInvariant()
 
-            $githubRepo = "$env:CIRCLE_PROJECT_USERNAME/$env:CIRCLE_PROJECT_REPONAME"
+            $githubRepo = if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REPOSITORY)) {
+              $env:GITHUB_REPOSITORY
+            } else {
+              "$env:CIRCLE_PROJECT_USERNAME/$env:CIRCLE_PROJECT_REPONAME"
+            }
             $githubPackageUrl = "https://github.com/$githubRepo/releases/download/$tag/$zipName"
 
             $cosBaseUrl = if ([string]::IsNullOrWhiteSpace($env:COS_BASE_URL)) {
@@ -174,6 +178,10 @@ jobs:
                 throw "gh is still unavailable after installation. Check Chocolatey install logs and PATH."
               }
 
+              if ($githubRepo -notmatch '^[^/]+/[^/]+$') {
+                throw "Invalid GitHub repository value: '$githubRepo'. Expected owner/repo."
+              }
+
               $tokenPath = Join-Path $env:TEMP "gh_token.txt"
               $env:GITHUB_TOKEN | Out-File -FilePath $tokenPath -Encoding ascii -NoNewline
               Get-Content $tokenPath | & $ghCmd.Source auth login --with-token
@@ -181,11 +189,16 @@ jobs:
               $releaseName = "$env:CIRCLE_PROJECT_REPONAME $tag"
               $releaseBody = "Auto release generated from push.`n`nVersion: $version`nSHA256: $sha256"
 
-              & $ghCmd.Source release view $tag --repo $githubRepo *> $null
+              cmd /c "\"$($ghCmd.Source)\" repo view $githubRepo --json name --jq .name 1>nul 2>nul"
               if ($LASTEXITCODE -ne 0) {
-                & $ghCmd.Source release create $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --title $releaseName --notes $releaseBody --repo $githubRepo
+                Write-Host "Cannot access repository '$githubRepo' with current GITHUB_TOKEN, skip GitHub Release publish."
               } else {
-                & $ghCmd.Source release upload $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --clobber --repo $githubRepo
+                cmd /c "\"$($ghCmd.Source)\" release view $tag --repo $githubRepo 1>nul 2>nul"
+                if ($LASTEXITCODE -ne 0) {
+                  & $ghCmd.Source release create $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --title $releaseName --notes $releaseBody --repo $githubRepo
+                } else {
+                  & $ghCmd.Source release upload $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --clobber --repo $githubRepo
+                }
               }
             } else {
               Write-Host "GITHUB_TOKEN is empty, skip GitHub Release publish."
