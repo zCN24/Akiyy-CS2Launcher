@@ -216,22 +216,68 @@ dotnet run
 bin\Debug\net8.0-windows\CS2Launcher.exe
 ```
 
-## GitHub Actions 自动发布
+## 打包 MSI（可选安装目录 + 桌面快捷方式 + 内置 .NET 8）
 
-仓库内置工作流：
+项目已内置 WiX 安装工程与一键脚本：
+
+- `installer/CS2Launcher.Installer.wixproj`
+- `installer/Product.wxs`
+- `build-msi.bat`
+
+### 特性
+
+- 安装 UI 支持自定义安装目录（`WixUI_InstallDir`）
+- 默认安装目录为 `Program Files\Akiyy Hub\CS2Launcher`
+- 安装后自动创建桌面快捷方式
+- 主程序使用 self-contained 发布，安装包内置 .NET 8 运行时（用户无需额外安装）
+- Updater 也以 self-contained 方式发布并随 MSI 一起安装
+- 卸载默认保留用户配置（`config.json`）与日志，避免误删本地服务器配置
+- MSI 文件命名统一为：`CS2Launcher-<version>-win-x64-with-runtime.msi`
+
+### 前置要求
+
+- .NET SDK（建议 8/9）
+- 可联网下载 NuGet 包（首次需要拉取 WiX SDK 与运行时包）
+- 系统磁盘有足够空间（self-contained 发布体积较大）
+
+### 生成 MSI
+
+在项目根目录执行：
+
+```bat
+build-msi.bat 1.0.10
+```
+
+参数 `1.0.10` 为 MSI 版本号（可选，不传默认 `1.0.0`）。
+
+产物路径：
+
+- `artifacts/installer/CS2Launcher-<version>-win-x64-with-runtime.msi`
+
+中间发布目录：
+
+- `artifacts/publish/app`
+- `artifacts/publish/updater`
+
+## CI 自动发布（GitHub + CircleCI）
+
+仓库内置两套工作流：
 
 - `.github/workflows/auto-release.yml`
+- `.circleci/config.yml`
 
 行为说明：
 
 1. 每次 push 自动触发构建与发布。
-2. 生成主程序发布目录，并确保 `config.default.json` 放在包根目录。
-3. 将主程序与 Updater 一起打包为 zip。
+2. 生成 self-contained 主程序发布目录，并构建 MSI（内置 .NET 8 运行时）。
+3. 产出两个发布文件：
+   - `CS2Launcher-<version>.zip`
+   - `CS2Launcher-<version>-win-x64-with-runtime.msi`
 4. 计算 zip 的 SHA256，生成两份更新清单：
     - `manifest.json`（GitHub 下载地址）
     - `manifest-cos.json`（COS 下载地址）
-5. 自动创建 GitHub Release 并上传 zip 与清单。
-6. 同步上传 zip 与清单到腾讯云 COS（含稳定 `latest.json`）。
+5. 自动创建/更新 GitHub Release 并上传 zip、msi 与清单。
+6. 同步上传 zip、msi 与清单到腾讯云 COS（含稳定 `latest.json`）。
 
 ### 需要配置的 Secrets
 

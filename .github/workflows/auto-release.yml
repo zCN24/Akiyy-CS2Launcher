@@ -60,10 +60,12 @@ jobs:
           $version = "1.0.${{ github.run_number }}"
           $tag = "v$version"
           $zipName = "CS2Launcher-$version.zip"
+          $msiName = "CS2Launcher-$version-win-x64-with-runtime.msi"
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "zip_name=$zipName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "msi_name=$msiName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Build release binaries
         shell: pwsh
@@ -71,10 +73,15 @@ jobs:
           dotnet restore CS2Launcher.csproj
           dotnet build CS2Launcher.csproj -c Release /p:Version=${{ steps.meta.outputs.version }} /p:AssemblyVersion=${{ steps.meta.outputs.version }} /p:FileVersion=${{ steps.meta.outputs.version }}
 
+      - name: Build MSI (with runtime)
+        shell: pwsh
+        run: |
+          cmd /c "build-msi.bat ${{ steps.meta.outputs.version }}"
+
       - name: Stage package files
         shell: pwsh
         run: |
-          $sourceDir = "bin/Release/net8.0-windows"
+          $sourceDir = "artifacts/publish/app"
           $srcDir = "src"
           $stageDir = "dist/stage"
 
@@ -84,6 +91,7 @@ jobs:
 
           New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
           Copy-Item "$sourceDir/*" -Destination $stageDir -Recurse -Force
+          Copy-Item "artifacts/installer/${{ steps.meta.outputs.msi_name }}" -Destination "dist/${{ steps.meta.outputs.msi_name }}" -Force
 
           # Put all files from src into the package root.
           if (Test-Path $srcDir) {
@@ -184,6 +192,7 @@ jobs:
           make_latest: true
           files: |
             dist/${{ steps.meta.outputs.zip_name }}
+            dist/${{ steps.meta.outputs.msi_name }}
             dist/manifest.json
             dist/manifest-cos.json
           body: |
@@ -206,6 +215,7 @@ jobs:
         run: |
           $tag = "${{ steps.meta.outputs.tag }}"
           $zipName = "${{ steps.meta.outputs.zip_name }}"
+          $msiName = "${{ steps.meta.outputs.msi_name }}"
 
           $cosReleasePrefix = $env:COS_RELEASE_PREFIX.Trim('/')
           $cosManifestKey = "${{ steps.manifest.outputs.cos_manifest_key }}"
@@ -214,6 +224,7 @@ jobs:
 
           # Versioned package and manifest.
           coscmd upload -f "dist/$zipName" "/$cosReleasePrefix/$tag/$zipName"
+          coscmd upload -f "dist/$msiName" "/$cosReleasePrefix/$tag/$msiName"
           coscmd upload -f "dist/manifest-cos.json" "/$cosReleasePrefix/$tag/manifest.json"
 
           # Stable latest manifest for clients.

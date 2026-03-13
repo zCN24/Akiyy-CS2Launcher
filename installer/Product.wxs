@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+      Name="Akiyy Hub CS2Launcher"
+      Manufacturer="Akiyy Hub"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="9A37756E-7A49-4D7E-A77D-0F287F304F9F"
+      Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="[ProductName] 已安装更新版本。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="..\icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPCOMMENTS" Value="CS2 Steam Launcher by Akiyy Hub" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Akiyy-hub/CS2Launcher" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Akiyy-hub/CS2Launcher/issues" />
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <ui:WixUI Id="WixUI_InstallDir" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyFolder" Name="Akiyy Hub">
+        <Directory Id="INSTALLFOLDER" Name="CS2Launcher" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="*">
+        <Shortcut
+            Id="DesktopShortcut"
+            Name="CS2 Launcher"
+            Description="CS2 Steam Launcher"
+            Target="[INSTALLFOLDER]CS2Launcher.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+            Root="HKCU"
+            Key="Software\AkiyyHub\CS2Launcher"
+            Name="DesktopShortcut"
+            Type="integer"
+            Value="1"
+            KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+        <Files Include="$(var.PublishDir)\**" Exclude="$(var.PublishDir)\**\*.pdb" />
+      </ComponentGroup>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="CS2Launcher" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="DesktopShortcutComponent" />
+    </Feature>
+  </Package>
+</Wix>
