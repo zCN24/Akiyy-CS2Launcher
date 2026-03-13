@@ -79,10 +79,36 @@ jobs:
 
             $sha256 = (Get-FileHash -Algorithm SHA256 "dist/$zipName").Hash.ToLowerInvariant()
 
-            $githubRepo = if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REPOSITORY)) {
-              $env:GITHUB_REPOSITORY
-            } else {
-              "$env:CIRCLE_PROJECT_USERNAME/$env:CIRCLE_PROJECT_REPONAME"
+            function Resolve-GitHubRepo([string]$value) {
+              if ([string]::IsNullOrWhiteSpace($value)) {
+                return $null
+              }
+
+              $v = $value.Trim()
+
+              if ($v -match '^[^/\s]+/[^/\s]+$') {
+                return $v
+              }
+
+              if ($v -match '^https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s]+?)(?:\.git)?/?$') {
+                return "$($Matches[1])/$($Matches[2])"
+              }
+
+              if ($v -match '^git@github\.com:([^/\s]+)/([^/\s]+?)(?:\.git)?$') {
+                return "$($Matches[1])/$($Matches[2])"
+              }
+
+              return $null
+            }
+
+            $githubRepo = Resolve-GitHubRepo $env:GITHUB_REPOSITORY
+            if ($null -eq $githubRepo) {
+              $githubRepo = Resolve-GitHubRepo "$env:CIRCLE_PROJECT_USERNAME/$env:CIRCLE_PROJECT_REPONAME"
+            }
+
+            $hasValidGithubRepo = -not [string]::IsNullOrWhiteSpace($githubRepo)
+            if (-not $hasValidGithubRepo) {
+              throw "Invalid GitHub repository value. Use owner/repo or a valid GitHub URL such as https://github.com/owner/repo"
             }
             $githubPackageUrl = "https://github.com/$githubRepo/releases/download/$tag/$zipName"
 
@@ -153,55 +179,51 @@ jobs:
             $manifestForGithub | ConvertTo-Json -Depth 6 | Out-File -FilePath "dist/manifest.json" -Encoding utf8
             $manifestForCos | ConvertTo-Json -Depth 6 | Out-File -FilePath "dist/manifest-cos.json" -Encoding utf8
 
-            if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
-              if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-                choco install -y gh
+            if ([string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+              throw "GITHUB_TOKEN is required. Release upload cannot be skipped."
+            }
 
-                # Chocolatey may not update PATH for the current PowerShell session.
-                $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-                $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-                $env:PATH = "$machinePath;$userPath"
+            if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+              choco install -y gh
 
-                $ghCandidates = @(
-                  "C:\Program Files\GitHub CLI",
-                  "C:\ProgramData\chocolatey\bin"
-                )
-                foreach ($dir in $ghCandidates) {
-                  if ((Test-Path $dir) -and ($env:PATH -notlike "*$dir*")) {
-                    $env:PATH = "$dir;$env:PATH"
-                  }
+              # Chocolatey may not update PATH for the current PowerShell session.
+              $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+              $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+              $env:PATH = "$machinePath;$userPath"
+
+              $ghCandidates = @(
+                "C:\Program Files\GitHub CLI",
+                "C:\ProgramData\chocolatey\bin"
+              )
+              foreach ($dir in $ghCandidates) {
+                if ((Test-Path $dir) -and ($env:PATH -notlike "*$dir*")) {
+                  $env:PATH = "$dir;$env:PATH"
                 }
               }
+            }
 
-              $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-              if ($null -eq $ghCmd) {
-                throw "gh is still unavailable after installation. Check Chocolatey install logs and PATH."
-              }
+            $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+            if ($null -eq $ghCmd) {
+              throw "gh is still unavailable after installation. Check Chocolatey install logs and PATH."
+            }
 
-              if ($githubRepo -notmatch '^[^/]+/[^/]+$') {
-                throw "Invalid GitHub repository value: '$githubRepo'. Expected owner/repo."
-              }
+            $tokenPath = Join-Path $env:TEMP "gh_token.txt"
+            $env:GITHUB_TOKEN | Out-File -FilePath $tokenPath -Encoding ascii -NoNewline
+            Get-Content $tokenPath | & $ghCmd.Source auth login --with-token
 
-              $tokenPath = Join-Path $env:TEMP "gh_token.txt"
-              $env:GITHUB_TOKEN | Out-File -FilePath $tokenPath -Encoding ascii -NoNewline
-              Get-Content $tokenPath | & $ghCmd.Source auth login --with-token
+            $releaseName = "$env:CIRCLE_PROJECT_REPONAME $tag"
+            $releaseBody = "Auto release generated from push.`n`nVersion: $version`nSHA256: $sha256"
 
-              $releaseName = "$env:CIRCLE_PROJECT_REPONAME $tag"
-              $releaseBody = "Auto release generated from push.`n`nVersion: $version`nSHA256: $sha256"
+            cmd /c "\"$($ghCmd.Source)\" repo view $githubRepo --json name --jq .name 1>nul 2>nul"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Cannot access repository '$githubRepo' with current GITHUB_TOKEN."
+            }
 
-              cmd /c "\"$($ghCmd.Source)\" repo view $githubRepo --json name --jq .name 1>nul 2>nul"
-              if ($LASTEXITCODE -ne 0) {
-                Write-Host "Cannot access repository '$githubRepo' with current GITHUB_TOKEN, skip GitHub Release publish."
-              } else {
-                cmd /c "\"$($ghCmd.Source)\" release view $tag --repo $githubRepo 1>nul 2>nul"
-                if ($LASTEXITCODE -ne 0) {
-                  & $ghCmd.Source release create $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --title $releaseName --notes $releaseBody --repo $githubRepo
-                } else {
-                  & $ghCmd.Source release upload $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --clobber --repo $githubRepo
-                }
-              }
+            cmd /c "\"$($ghCmd.Source)\" release view $tag --repo $githubRepo 1>nul 2>nul"
+            if ($LASTEXITCODE -ne 0) {
+              & $ghCmd.Source release create $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --title $releaseName --notes $releaseBody --repo $githubRepo
             } else {
-              Write-Host "GITHUB_TOKEN is empty, skip GitHub Release publish."
+              & $ghCmd.Source release upload $tag "dist/$zipName" "dist/manifest.json" "dist/manifest-cos.json" --clobber --repo $githubRepo
             }
 
             python -m pip install --upgrade pip
